@@ -3,6 +3,6 @@
 
 | Comando     | Description | Privilegios     |
 | :---        |    :----:   |          ---: |
-| !Atender    | Mueve al canal del profesor al primer usuario en la cola       | Admin   |
-| !Pregunta   | Agrega al usuario a la cola de consultas        | Everyone      |
+| !Atender    | Mueve al canal del profesor al primer alumnos en la cola       | Admin   |
+| !Pregunta   | Agrega al alumno a la cola de consultas        | Everyone      |
 | !Pausa      | Mueve a un alumno al canal de espera        | Admin      |
