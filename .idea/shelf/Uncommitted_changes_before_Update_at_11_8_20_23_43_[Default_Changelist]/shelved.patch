@@ -1,0 +1,50 @@
+Index: .idea/JorgeBot.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<module type=\"PYTHON_MODULE\" version=\"4\">\n  <component name=\"NewModuleRootManager\">\n    <content url=\"file://$MODULE_DIR$\" />\n    <orderEntry type=\"jdk\" jdkName=\"Python 3.5 (tp1)\" jdkType=\"Python SDK\" />\n    <orderEntry type=\"sourceFolder\" forTests=\"false\" />\n  </component>\n</module>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/JorgeBot.iml	(revision fd9a128ae839f6811377995640ff08818b3aa821)
++++ .idea/JorgeBot.iml	(date 1597196031020)
+@@ -2,7 +2,7 @@
+ <module type="PYTHON_MODULE" version="4">
+   <component name="NewModuleRootManager">
+     <content url="file://$MODULE_DIR$" />
+-    <orderEntry type="jdk" jdkName="Python 3.5 (tp1)" jdkType="Python SDK" />
++    <orderEntry type="jdk" jdkName="Python 3.6" jdkType="Python SDK" />
+     <orderEntry type="sourceFolder" forTests="false" />
+   </component>
+ </module>
+\ No newline at end of file
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/vcs.xml	(date 1595969281067)
++++ .idea/vcs.xml	(date 1595969281067)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="$PROJECT_DIR$" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectRootManager\" version=\"2\" project-jdk-name=\"Python 3.5 (tp1)\" project-jdk-type=\"Python SDK\" />\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/misc.xml	(revision fd9a128ae839f6811377995640ff08818b3aa821)
++++ .idea/misc.xml	(date 1597196031452)
+@@ -1,4 +1,4 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.5 (tp1)" project-jdk-type="Python SDK" />
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.6" project-jdk-type="Python SDK" />
+ </project>
+\ No newline at end of file
