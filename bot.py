@@ -19,7 +19,7 @@ class JorgeBot:
 
     def enviarMail(self, id, texto):
         SUBJECT = 'Consulta'
-        gmail_sender = self.mailBot[0] + '@gmail.com'
+        gmail_sender = self.mailBot[0]
         gmail_passwd = self.mailBot[1]
         profesor = self.mailProfesor
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -81,20 +81,25 @@ class JorgeBot:
             elif after.channel is None and before.channel is not None:
                 def check(message, channel):
                     return message.author == member and message.channel == channelDM
+                esprofesor = False
+                for role in member.roles:
+                    if role.name == 'admin':
+                        esprofesor = True
 
-                await channelDM.send('Saliste de la clase, consultas borradas. ¿Desea que enviar un mail de consulta al profesor? si/no')
-                respuesta = await self.client.wait_for('message', check=check, timeout=60)
-                resString = respuesta.content.lower()
-                if resString == 'si':
-                    await channelDM.send('Ingrese Consulta:')
-                    consulta = await self.client.wait_for('message', check=check, timeout=60)
-                    texto = consulta.content.lower()
-                    id = consulta.author.id
-                    self.enviarMail(id,texto)
-                elif resString != 'no':
-                    await channelDM.send('respuesta invalida. Vuelva a intentar')
-                del self.dicAlumnos[member.id]
-                self.cola.delete(member.id)
+                if not esprofesor:
+                    await channelDM.send('Saliste de la clase, consultas borradas. ¿Desea que enviar un mail de consulta al profesor? si/no')
+                    respuesta = await self.client.wait_for('message', check=check, timeout=60)
+                    resString = respuesta.content.lower()
+                    if resString == 'si':
+                        await channelDM.send('Ingrese Consulta:')
+                        consulta = await self.client.wait_for('message', check=check, timeout=60)
+                        texto = consulta.content.lower()
+                        id = consulta.author.id
+                        self.enviarMail(id,texto)
+                    elif resString != 'no':
+                        await channelDM.send('respuesta invalida. Vuelva a intentar')
+                    del self.dicAlumnos[member.id]
+                    self.cola.delete(member.id)
 
         @self.client.command()
         @commands.has_permissions(administrator=True)
@@ -110,13 +115,20 @@ class JorgeBot:
             await message.add_reaction('\u270B')
 
         @self.client.event
-        async def on_reaction_add(reaction, user):
+        async def on_reaction_add(reaction, member):
+            esprofesor = False
+            for role in member.roles:
+                if role.name == 'admin':
+                    esprofesor = True
+
             num = await reaction.count()
-            id = user.id
+            id = member.id
+
             if id != self.client.user.id:
                 status = self.dicAlumnos[id]
-                channelDM = await user.create_dm()
+                channelDM = await member.create_dm()
                 consulta = u.consulta(num, id, status)
+
                 if status == 'denegado':
                     await channelDM.send("Ya estas en la cola de espera, espere a ser atendido antes de "
                                              "iniciar "
@@ -130,13 +142,14 @@ class JorgeBot:
         @commands.has_permissions(administrator=True)
         # problemas de concurrencia con más de un profesor TODO: asyncio lock() o await sleep
         async def atender(ctx):
+            canal_del_profesor = ctx.message.author.voice.voice_channel
+
             size = self.cola.size()
             if size > 0:
                 alumno = self.cola.atender()
                 print(alumno)
                 self.dicAlumnos[alumno] = 'activo'
                 alumno = ctx.guild.get_member(alumno)
-                canal_del_profesor = discord.utils.get(ctx.guild.voice_channels, name='Profesor')
                 await alumno.move_to(canal_del_profesor)
 
         @self.client.command(pass_context=True)
@@ -152,5 +165,5 @@ class JorgeBot:
 
         self.client.run(self.token)
 
-Jorge = JorgeBot('')
+Jorge = JorgeBot()
 Jorge.activardiscord()
