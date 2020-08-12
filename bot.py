@@ -1,7 +1,5 @@
 import utils as u
 import discord
-import datetime
-import smtplib as email
 import csv
 from discord.ext import commands
 import smtplib
