@@ -1,18 +1,51 @@
 import utils as u
 import discord
 import datetime
+import smtplib as email
+import csv
 from discord.ext import commands
+import smtplib
 
 
 class JorgeBot:
 
-    def __init__(self, token):
+    def __init__(self, token, mail, mailProfesor):
         self.client = commands.Bot(command_prefix="!", description='')
         self.cola = u.pqueue()
         self.token = token
+        self.mailBot = mail
+        self.mailProfesor = mailProfesor
         self.dicAlumnos = {}
         self.Membersize = 1
         self.form = 0
+
+    def enviarMail(self, id, texto):
+        SUBJECT = 'Consulta'
+        gmail_sender = self.mailBot[0] + '@gmail.com'
+        gmail_passwd = self.mailBot[1]
+        profesor = self.mailProfesor
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.login(gmail_sender, gmail_passwd)
+        mail = ''
+        with open('mails.csv', 'r', newline='') as mails:
+            rd = csv.DictReader(mails)
+            for row in rd:
+                if row['member_id'] == id:
+                    mail = row['mails']
+        mails.close()
+
+        BODY = '\r\n'.join(['To: %s' % profesor,
+                           'From: %s' % mail,
+                           'Subject: %s' % SUBJECT,
+                           '', texto])
+        try:
+            server.sendmail(gmail_sender, [profesor], BODY)
+            print('email sent')
+        except:
+            print('error sending mail')
+        server.quit()
 
     def activardiscord(self):
 
@@ -31,8 +64,11 @@ class JorgeBot:
                 return message.author == member and message.channel == channelDM
 
             respuesta = await self.client.wait_for('message', check=check)
-
-
+            with open('mails.csv', 'w', newline='') as mails:
+                fieldnames = ['alumno_id','mail']
+                wr = csv.DictWriter(mails, fieldnames=fieldnames)
+                wr.writerow({'alumno_id': str(member.id), 'mails':respuesta.content})
+            mails.close()
 
         @self.client.event
         async def on_member_remove(member):
@@ -41,11 +77,24 @@ class JorgeBot:
         @self.client.event
         async def on_voice_state_update(member, before, after):
             channelDM = await member.create_dm()
-            if before.channel == None and after.channel is not None:
+            if before.channel is None and after.channel is not None:
                 self.dicAlumnos[member.id] = 'activo'
                 await channelDM.send('bienvenido a la clase')
-            elif after.channel == None and before.channel is not None:
-                await channelDM.send('saliste de la clase, tus consultas fueron borradas')
+            elif after.channel is None and before.channel is not None:
+                def check(message, channel):
+                    return message.author == member and message.channel == channelDM
+
+                await channelDM.send('Saliste de la clase, consultas borradas. ¿Desea que enviar un mail de consulta al profesor? si/no')
+                respuesta = await self.client.wait_for('message', check=check, timeout=60)
+                resString = respuesta.content.lower()
+                if resString == 'si':
+                    await channelDM.send('Ingrese Consulta:')
+                    consulta = await self.client.wait_for('message', check=check, timeout=60)
+                    texto = consulta.content.lower()
+                    id = consulta.author.id
+                    self.enviarMail(id,texto)
+                elif resString != 'no':
+                    await channelDM.send('respuesta invalida. Vuelva a intentar')
                 del self.dicAlumnos[member.id]
                 self.cola.delete(member.id)
 
@@ -64,26 +113,20 @@ class JorgeBot:
 
         @self.client.event
         async def on_reaction_add(reaction, user):
-            if(reaction.message.id == self.form):
-                timestamp = (reaction.message.id >> 22) + 1420070400000
-                date = datetime.datetime.fromtimestamp(timestamp / 1e3)
-                time = date.time()
-                time = time.hour + time.minute / 60.0
-                id = user.id
-                if(id != self.client.user.id):
-
-                    status  = self.dicAlumnos[id]
-                    channelDM = await user.create_dm()
-                    consulta = u.consulta(time, id, status)
-                    if status == 'denegado':
-                        await channelDM.send("Ya estas en la cola de espera, espere a ser atendido antes de "
+            num = await reaction.count()
+            id = user.id
+            if id != self.client.user.id:
+                status = self.dicAlumnos[id]
+                channelDM = await user.create_dm()
+                consulta = u.consulta(num, id, status)
+                if status == 'denegado':
+                    await channelDM.send("Ya estas en la cola de espera, espere a ser atendido antes de "
                                              "iniciar "
                                              "otra consulta")
-                    else:
-                        self.cola.insertar_consulta(consulta)
-                        self.dicAlumnos[id] = 'denegado'
-                        await channelDM.send('El profesor lo atendera pronto')
-
+                else:
+                    self.cola.insertar_consulta(consulta)
+                    self.dicAlumnos[id] = 'denegado'
+                    await channelDM.send('El profesor lo atendera pronto')
 
         @self.client.command()
         @commands.has_permissions(administrator=True)
