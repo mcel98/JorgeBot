@@ -111,5 +111,5 @@ class JorgeBot:
 
         self.client.run(self.token)
 
-Jorge = JorgeBot('Njk2MTAxNDA5OTAwMzMxMDI4.XouuHQ.BbqIH7BQuCFZ4R9D2n91-ZJvc94')
+Jorge = JorgeBot('')
 Jorge.activardiscord()
