@@ -1,8 +1,7 @@
 class consulta:
-    def __init__(self, tiempo, id, pregunta,status):
+    def __init__(self, tiempo, id ,status):
         self.id = id
         self.tiempo = tiempo
-        self.pregunta = pregunta
         self.status = status
 
     def cambiar_status(self,status):

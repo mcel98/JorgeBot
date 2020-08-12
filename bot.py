@@ -7,13 +7,12 @@ from discord.ext import commands
 class JorgeBot:
 
     def __init__(self, token):
-        self.client = commands.Bot(command_prefix="!",description='')
+        self.client = commands.Bot(command_prefix="!", description='')
         self.cola = u.pqueue()
         self.token = token
         self.dicAlumnos = {}
         self.Membersize = 1
-
-
+        self.form = 0
 
     def activardiscord(self):
 
@@ -24,7 +23,15 @@ class JorgeBot:
 
         @self.client.event
         async def on_member_join(member):
+            channelDM = await member.create_dm()
             self.dicAlumnos[member.id] = 'activo'
+            await channelDM.send('Bienvenido a la cursada, Por favor ingrese su mail:')
+
+            def check(message, channel):
+                return message.author == member and message.channel == channelDM
+
+            respuesta = await self.client.wait_for('message', check=check)
+
 
 
         @self.client.event
@@ -32,7 +39,7 @@ class JorgeBot:
             self.cola.delete(member.id)
 
         @self.client.event
-        async def on_voice_state_update(member,before, after):
+        async def on_voice_state_update(member, before, after):
             channelDM = await member.create_dm()
             if before.channel == None and after.channel is not None:
                 self.dicAlumnos[member.id] = 'activo'
@@ -42,36 +49,45 @@ class JorgeBot:
                 del self.dicAlumnos[member.id]
                 self.cola.delete(member.id)
 
-
         @self.client.command()
+        @commands.has_permissions(administrator=True)
+        async def consultas(ctx):
+            Anuncio = discord.Embed(
+                title='Consultas abiertas',
+                description='Hacer click en el icono de la mano para hacer una pregunta y espere ser atendido',
+                colour=discord.Colour.orange()
+            )
+            channel = discord.utils.get(ctx.guild.text_channels, name="consultas")
+            message = await channel.send(embed=Anuncio)
+            self.form = message.id
+            await message.add_reaction('\u270B')
 
-        async def pregunta(ctx):
-            if ctx.message.author == self.client.user:
-                await ctx.send(ctx.message.channel, 'bot no puede unirse a la cola')
-            else:
-
-                timestamp = (ctx.message.id >> 22) + 1420070400000
+        @self.client.event
+        async def on_reaction_add(reaction, user):
+            if(reaction.message.id == self.form):
+                timestamp = (reaction.message.id >> 22) + 1420070400000
                 date = datetime.datetime.fromtimestamp(timestamp / 1e3)
                 time = date.time()
                 time = time.hour + time.minute / 60.0
-                mensaje = ctx.message.content
-                voiceChannel = ctx.message.author.voice.channel
-                id = ctx.message.author.id
-                status = self.dicAlumnos[id]
-                consulta = u.consulta(time, id, mensaje, status)
-                channelDM = await ctx.message.author.create_dm()
-                if status == 'denegado':
-                    await channelDM.send("Ya estas en la cola de espera, espere a ser atendido antes de "
-                                         "iniciar "
-                                         "otra consulta")
-                else:
-                    self.cola.insertar_consulta(consulta)
-                    self.dicAlumnos[id] = 'denegado'
-                    await channelDM.send('El profesor lo atendera pronto')
-                    print(self.cola.queue[0].id)
+                id = user.id
+                if(id != self.client.user.id):
+
+                    status  = self.dicAlumnos[id]
+                    channelDM = await user.create_dm()
+                    consulta = u.consulta(time, id, status)
+                    if status == 'denegado':
+                        await channelDM.send("Ya estas en la cola de espera, espere a ser atendido antes de "
+                                             "iniciar "
+                                             "otra consulta")
+                    else:
+                        self.cola.insertar_consulta(consulta)
+                        self.dicAlumnos[id] = 'denegado'
+                        await channelDM.send('El profesor lo atendera pronto')
+
 
         @self.client.command()
-        @commands.has_permissions(administrator = True)
+        @commands.has_permissions(administrator=True)
+        # problemas de concurrencia con más de un profesor TODO: asyncio lock() o await sleep
         async def atender(ctx):
             size = self.cola.size()
             if size > 0:
@@ -93,8 +109,7 @@ class JorgeBot:
                     self.dicAlumnos[member.id] = 'pausa'
                     await member.move_to(canal_de_espera)
 
-        self.client.run(str(self.token))
+        self.client.run(self.token)
 
-
-Jorge = JorgeBot('#')
+Jorge = JorgeBot('Njk2MTAxNDA5OTAwMzMxMDI4.XouuHQ.BbqIH7BQuCFZ4R9D2n91-ZJvc94')
 Jorge.activardiscord()
