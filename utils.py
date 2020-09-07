@@ -18,11 +18,11 @@ class pqueue:
         self.pausa = []
         self.size = 0
 
-    def size(self):
+    def tamanio(self):
         return self.size
 
     def p(self,i):
-        return (i-1)/2
+        return (i-1)//2
 
     def left(self, i):
         return 2 * i + 1

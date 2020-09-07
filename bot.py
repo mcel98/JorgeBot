@@ -27,17 +27,20 @@ class JorgeBot:
         server.starttls()
         server.login(gmail_sender, gmail_passwd)
         mail = ''
+        fieldnames = ['alumno_id', 'mails']
+        print(id)
         with open('mails.csv', 'r', newline='') as mails:
-            rd = csv.DictReader(mails)
+            rd = csv.DictReader(mails,fieldnames = fieldnames)
             for row in rd:
-                if row['member_id'] == id:
+                print(row['mails'])
+                if row['alumno_id'] == str(id):
                     mail = row['mails']
         mails.close()
-
+        print(mail)
         BODY = '\r\n'.join(['To: %s' % profesor,
                            'From: %s' % mail,
                            'Subject: %s' % SUBJECT,
-                           '', texto])
+                           '', texto + ' ' + mail])
         try:
             server.sendmail(gmail_sender, [profesor], BODY)
             print('email sent')
@@ -49,7 +52,7 @@ class JorgeBot:
 
         @self.client.event
         async def on_message(message):
-            message.content = message.content.lower().replace(' ', '')
+            message.content = message.content.lower()
             await self.client.process_commands(message)
 
         @self.client.event
@@ -58,12 +61,12 @@ class JorgeBot:
             self.dicAlumnos[member.id] = 'activo'
             await channelDM.send('Bienvenido a la cursada, Por favor ingrese su mail:')
 
-            def check(message, channel):
+            def check(message):
                 return message.author == member and message.channel == channelDM
 
             respuesta = await self.client.wait_for('message', check=check)
-            with open('mails.csv', 'w', newline='') as mails:
-                fieldnames = ['alumno_id','mail']
+            with open('mails.csv', 'a', newline='') as mails:
+                fieldnames = ['alumno_id','mails']
                 wr = csv.DictWriter(mails, fieldnames=fieldnames)
                 wr.writerow({'alumno_id': str(member.id), 'mails':respuesta.content})
             mails.close()
@@ -79,7 +82,7 @@ class JorgeBot:
                 self.dicAlumnos[member.id] = 'activo'
                 await channelDM.send('bienvenido a la clase')
             elif after.channel is None and before.channel is not None:
-                def check(message, channel):
+                def check(message):
                     return message.author == member and message.channel == channelDM
                 esprofesor = False
                 for role in member.roles:
@@ -87,7 +90,7 @@ class JorgeBot:
                         esprofesor = True
 
                 if not esprofesor:
-                    await channelDM.send('Saliste de la clase, consultas borradas. ¿Desea que enviar un mail de consulta al profesor? si/no')
+                    await channelDM.send('Saliste de la clase. ¿Desea enviar un mail de consulta al profesor? si/no')
                     respuesta = await self.client.wait_for('message', check=check, timeout=60)
                     resString = respuesta.content.lower()
                     if resString == 'si':
@@ -96,6 +99,7 @@ class JorgeBot:
                         texto = consulta.content.lower()
                         id = consulta.author.id
                         self.enviarMail(id,texto)
+                        await channelDM.send('enviado')
                     elif resString != 'no':
                         await channelDM.send('respuesta invalida. Vuelva a intentar')
                     del self.dicAlumnos[member.id]
@@ -114,19 +118,23 @@ class JorgeBot:
             self.form = message.id
             await message.add_reaction('\u270B')
 
+
         @self.client.event
-        async def on_reaction_add(reaction, member):
+        async def on_reaction_add(reaction, user):
             esprofesor = False
-            for role in member.roles:
+            for role in user.roles:
                 if role.name == 'admin':
                     esprofesor = True
 
-            num = await reaction.count()
-            id = member.id
+            num = reaction.count
+            id = user.id
+            message_id = reaction.message.id
 
-            if id != self.client.user.id:
+            if id != self.client.user.id and not esprofesor and message_id == self.form:
+
                 status = self.dicAlumnos[id]
-                channelDM = await member.create_dm()
+                channelDM = await user.create_dm()
+                print('funciona')
                 consulta = u.consulta(num, id, status)
 
                 if status == 'denegado':
@@ -142,9 +150,9 @@ class JorgeBot:
         @commands.has_permissions(administrator=True)
         # problemas de concurrencia con más de un profesor TODO: asyncio lock() o await sleep
         async def atender(ctx):
-            canal_del_profesor = ctx.message.author.voice.voice_channel
+            canal_del_profesor = ctx.message.author.voice.channel
 
-            size = self.cola.size()
+            size = self.cola.tamanio()
             if size > 0:
                 alumno = self.cola.atender()
                 print(alumno)
